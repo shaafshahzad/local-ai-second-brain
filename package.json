@@ -6,12 +6,20 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qdrant:up": "docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/.qdrant_storage:/qdrant/storage:z qdrant/qdrant",
+    "ollama:pull": "ollama pull llama3.1 && ollama pull nomic-embed-text"
   },
   "dependencies": {
+    "@qdrant/js-client-rest": "^1.18.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "better-sqlite3": "^12.11.1",
+    "gray-matter": "^4.0.3",
     "next": "16.2.10",
+    "ollama": "^0.6.3",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20",
@@ -26,6 +34,7 @@
     "unrs-resolver"
   ],
   "trustedDependencies": [
+    "better-sqlite3",
     "sharp",
     "unrs-resolver"
   ]
