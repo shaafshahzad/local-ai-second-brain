@@ -142,6 +142,10 @@ export default function SecondBrainApp() {
 
   async function capture(event: FormEvent) {
     event.preventDefault();
+    await saveCapture();
+  }
+
+  async function saveCapture() {
     if (!content.trim()) return;
 
     setBusy("capture");
@@ -462,7 +466,11 @@ export default function SecondBrainApp() {
               />
               Process after saving
             </label>
-            <button disabled={busy === "capture"} type="submit">
+            <button
+              disabled={busy === "capture"}
+              type="button"
+              onClick={saveCapture}
+            >
               {busy === "capture" ? "Saving..." : "Save capture"}
             </button>
           </div>
