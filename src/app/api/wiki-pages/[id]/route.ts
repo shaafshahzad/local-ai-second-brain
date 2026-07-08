@@ -5,6 +5,7 @@ import {
   getWikiPageById,
   updateWikiPageRecord,
 } from "@/lib/db";
+import { refreshWikiNavigation } from "@/lib/processing";
 import {
   deleteVaultFile,
   readVaultFile,
@@ -49,6 +50,11 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       title: body.title,
       pageType: body.pageType,
     });
+    refreshWikiNavigation({
+      action: "manual",
+      title: body.title,
+      detailLines: [`- Updated page: ${page.path}`],
+    });
 
     return NextResponse.json({
       page: getWikiPageById(page.id),
@@ -70,6 +76,11 @@ export async function DELETE(_request: NextRequest, context: RouteContext) {
 
   deleteVaultFile(page.path);
   deleteWikiPageRecord(page.id);
+  refreshWikiNavigation({
+    action: "manual",
+    title: page.title,
+    detailLines: [`- Deleted page: ${page.path}`],
+  });
   return NextResponse.json({ deleted: true });
 }
 
@@ -77,4 +88,3 @@ async function loadWikiPage(context: RouteContext) {
   const { id } = await context.params;
   return getWikiPageById(Number(id));
 }
-

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { insertWikiPage, listWikiPages } from "@/lib/db";
+import { refreshWikiNavigation } from "@/lib/processing";
 import { slugify, uniqueMarkdownPath, writeMarkdown } from "@/lib/vault";
 
 export const runtime = "nodejs";
@@ -61,6 +62,11 @@ ${now}
       path: localPath,
       pageType: slugify(pageType),
     });
+    refreshWikiNavigation({
+      action: "manual",
+      title: body.title,
+      detailLines: [`- Created page: ${localPath}`],
+    });
 
     return NextResponse.json({ id, path: localPath });
   } catch (error) {
@@ -70,4 +76,3 @@ ${now}
     );
   }
 }
-

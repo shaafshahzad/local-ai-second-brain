@@ -234,6 +234,32 @@ export default function SecondBrainApp() {
     }
   }
 
+  async function fileAnswer() {
+    if (!answer.trim() || !question.trim()) return;
+    setBusy("file-answer");
+    setNotice("");
+    try {
+      const sourcePaths = searchResults
+        .map((result) => result.payload?.path)
+        .filter((path): path is string => Boolean(path));
+      const response = await fetch("/api/answers/file", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ question, answer, sourcePaths }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error ?? "Could not file answer");
+      setNotice(`Filed answer to ${payload.path}.`);
+      await refresh();
+      setLibraryMode("wiki");
+      await openWikiPage(payload.id);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : "Could not file answer");
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function uploadFile(file: File) {
     const text = await file.text();
     setTitle(file.name.replace(/\.(md|markdown|txt)$/i, ""));
@@ -482,7 +508,17 @@ export default function SecondBrainApp() {
         <section className="answer-grid">
           {answer ? (
             <article className="answer-card">
-              <p className="eyebrow">Answer</p>
+              <div className="panel-title-row">
+                <p className="eyebrow">Answer</p>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  disabled={busy === "file-answer"}
+                  onClick={fileAnswer}
+                >
+                  {busy === "file-answer" ? "Filing..." : "File to wiki"}
+                </button>
+              </div>
               <p>{answer}</p>
             </article>
           ) : null}
@@ -757,4 +793,3 @@ function formatDate(value: string) {
     day: "numeric",
   });
 }
-

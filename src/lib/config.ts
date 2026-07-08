@@ -41,9 +41,9 @@ export const defaultVaultFolders = [
   "wiki/people",
   "wiki/places",
   "wiki/concepts",
+  "wiki/answers",
   "maps",
   "questions",
   "logs",
   "config",
 ];
-
