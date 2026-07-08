@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 type DashboardData = {
   vaultRoot: string;
@@ -80,8 +81,23 @@ type EditorState =
     };
 
 type LibraryMode = "sources" | "wiki";
+type AppView = "dashboard" | "capture" | "ask" | "library";
 
-export default function SecondBrainApp() {
+const navItems: { href: string; label: string; view: AppView }[] = [
+  { href: "/", label: "Dashboard", view: "dashboard" },
+  { href: "/capture", label: "Capture", view: "capture" },
+  { href: "/ask", label: "Ask", view: "ask" },
+  { href: "/library", label: "Library", view: "library" },
+];
+
+const pageTitles: Record<AppView, string> = {
+  dashboard: "Your local knowledge base.",
+  capture: "Capture now. Organize later.",
+  ask: "Find and synthesize what you saved.",
+  library: "Manage captures and wiki pages.",
+};
+
+export default function SecondBrainApp({ view = "dashboard" }: { view?: AppView }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
   const [content, setContent] = useState("");
@@ -256,7 +272,6 @@ export default function SecondBrainApp() {
       setNotice(`Filed answer to ${payload.path}.`);
       await refresh();
       setLibraryMode("wiki");
-      await openWikiPage(payload.id);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Could not file answer");
     } finally {
@@ -413,7 +428,7 @@ export default function SecondBrainApp() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Local AI Second Brain</p>
-          <h1>Capture anything. Find it later.</h1>
+          <h1>{pageTitles[view]}</h1>
         </div>
         <div className="header-actions">
           <span className={localReady ? "service-pill ok" : "service-pill warn"}>
@@ -424,140 +439,244 @@ export default function SecondBrainApp() {
           </button>
         </div>
       </header>
+      <nav className="app-nav" aria-label="Primary">
+        {navItems.map((item) => (
+          <Link
+            className={view === item.view ? "active" : ""}
+            href={item.href}
+            key={item.href}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
 
       {notice ? <p className="notice">{notice}</p> : null}
 
-      <section className="command-grid">
-        <form className="capture-card" onSubmit={capture}>
-          <div className="capture-topline">
-            <div>
-              <h2>Capture</h2>
-              <p>Paste text, a URL, or a quick note. Sorting can happen later.</p>
-            </div>
-            <label className="file-button">
-              Upload
-              <input
-                type="file"
-                accept=".md,.markdown,.txt,text/markdown,text/plain"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void uploadFile(file);
-                }}
-              />
-            </label>
-          </div>
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            placeholder="Title, optional"
-          />
-          <textarea
-            className="capture-textarea"
-            value={content}
-            onChange={(event) => setContent(event.target.value)}
-            placeholder="Paste text, a URL, or a note..."
-          />
-          <div className="capture-actions">
-            <label className="check-row">
-              <input
-                type="checkbox"
-                checked={saveAndProcess}
-                onChange={(event) => setSaveAndProcess(event.target.checked)}
-              />
-              Process after saving
-            </label>
-            <button
-              disabled={busy === "capture"}
-              type="button"
-              onClick={saveCapture}
-            >
-              {busy === "capture" ? "Saving..." : "Save capture"}
-            </button>
-          </div>
-        </form>
-
-        <aside className="side-stack">
-          <section className="quick-panel">
-            <div className="stat-strip">
-              <Metric label="Sources" value={dashboard?.stats.sources ?? 0} />
-              <Metric label="Queue" value={dashboard?.stats.unprocessed ?? 0} />
-              <Metric label="Chunks" value={dashboard?.stats.chunks ?? 0} />
-            </div>
-            <button
-              className="wide-button"
-              type="button"
-              disabled={busy === "process"}
-              onClick={processInbox}
-            >
-              {busy === "process" ? "Processing..." : "Process inbox"}
-            </button>
-            <p className="small-path">{health?.local.vaultRoot ?? ""}</p>
+      {view === "dashboard" ? (
+        <>
+          <section className="dashboard-grid">
+            <section className="quick-panel">
+              <p className="eyebrow">Status</p>
+              <div className="stat-strip">
+                <Metric label="Sources" value={dashboard?.stats.sources ?? 0} />
+                <Metric label="Queue" value={dashboard?.stats.unprocessed ?? 0} />
+                <Metric label="Chunks" value={dashboard?.stats.chunks ?? 0} />
+              </div>
+              <button
+                className="wide-button"
+                type="button"
+                disabled={busy === "process"}
+                onClick={processInbox}
+              >
+                {busy === "process" ? "Processing..." : "Process inbox"}
+              </button>
+              <p className="small-path">{health?.local.vaultRoot ?? ""}</p>
+            </section>
+            <section className="quick-panel">
+              <div className="panel-title-row">
+                <h2>Next actions</h2>
+                <span>{health?.local.chatModel ?? "local model"}</span>
+              </div>
+              <div className="action-list">
+                <Link href="/capture">Add a capture</Link>
+                <Link href="/ask">Ask your notes</Link>
+                <Link href="/library">Review the library</Link>
+              </div>
+            </section>
           </section>
 
-          <form className="quick-panel ask-panel" onSubmit={ask}>
-            <div className="panel-title-row">
-              <h2>Ask</h2>
-              <span>{health?.local.chatModel ?? "local model"}</span>
+          <section className="dashboard-grid">
+            <section className="quick-panel">
+              <p className="eyebrow">Recent captures</p>
+              <div className="compact-list">
+                {(dashboard?.recentSources ?? []).length ? (
+                  dashboard?.recentSources.slice(0, 5).map((source) => (
+                    <div key={source.id}>
+                      <strong>{source.title}</strong>
+                      <code>{source.local_path}</code>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">No captures yet.</p>
+                )}
+              </div>
+            </section>
+            <section className="quick-panel">
+              <p className="eyebrow">Recent wiki pages</p>
+              <div className="compact-list">
+                {(dashboard?.recentWikiPages ?? []).length ? (
+                  dashboard?.recentWikiPages.slice(0, 5).map((page) => (
+                    <div key={page.id}>
+                      <strong>{page.title}</strong>
+                      <code>{page.path}</code>
+                    </div>
+                  ))
+                ) : (
+                  <p className="muted">No wiki pages yet.</p>
+                )}
+              </div>
+            </section>
+          </section>
+        </>
+      ) : null}
+
+      {view === "capture" ? (
+        <section className="command-grid">
+          <form className="capture-card" onSubmit={capture}>
+            <div className="capture-topline">
+              <div>
+                <h2>Capture</h2>
+                <p>Paste text, a URL, or a quick note. Sorting can happen later.</p>
+              </div>
+              <label className="file-button">
+                Upload
+                <input
+                  type="file"
+                  accept=".md,.markdown,.txt,text/markdown,text/plain"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    if (file) void uploadFile(file);
+                  }}
+                />
+              </label>
             </div>
-            <textarea
-              className="question-input"
-              value={question}
-              onChange={(event) => setQuestion(event.target.value)}
-              placeholder="Ask your notes..."
+            <input
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="Title, optional"
             />
-            <button disabled={busy === "ask"} type="submit">
-              {busy === "ask" ? "Thinking..." : "Ask my notes"}
-            </button>
+            <textarea
+              className="capture-textarea"
+              value={content}
+              onChange={(event) => setContent(event.target.value)}
+              placeholder="Paste text, a URL, or a note..."
+            />
+            <div className="capture-actions">
+              <label className="check-row">
+                <input
+                  type="checkbox"
+                  checked={saveAndProcess}
+                  onChange={(event) => setSaveAndProcess(event.target.checked)}
+                />
+                Process after saving
+              </label>
+              <button
+                disabled={busy === "capture"}
+                type="button"
+                onClick={saveCapture}
+              >
+                {busy === "capture" ? "Saving..." : "Save capture"}
+              </button>
+            </div>
           </form>
-        </aside>
-      </section>
 
-      {(answer || searchResults.length > 0) && (
-        <section className="answer-grid">
-          {answer ? (
-            <article className="answer-card">
-              <div className="panel-title-row">
-                <p className="eyebrow">Answer</p>
-                <button
-                  className="secondary-button"
-                  type="button"
-                  disabled={busy === "file-answer"}
-                  onClick={fileAnswer}
-                >
-                  {busy === "file-answer" ? "Filing..." : "File to wiki"}
-                </button>
+          <aside className="side-stack">
+            <section className="quick-panel">
+              <div className="stat-strip">
+                <Metric label="Sources" value={dashboard?.stats.sources ?? 0} />
+                <Metric label="Queue" value={dashboard?.stats.unprocessed ?? 0} />
+                <Metric label="Chunks" value={dashboard?.stats.chunks ?? 0} />
               </div>
-              <p>{answer}</p>
-            </article>
-          ) : null}
-
-          {searchResults.length ? (
-            <article className="matches-card">
-              <div className="panel-title-row">
-                <p className="eyebrow">Matches</p>
-                <button
-                  className="text-button"
-                  type="button"
-                  onClick={() => setSearchResults([])}
-                >
-                  Clear
-                </button>
-              </div>
-              <div className="match-list">
-                {searchResults.slice(0, 4).map((result) => (
-                  <div className="match-row" key={result.id}>
-                    <strong>{result.payload?.title ?? "Untitled"}</strong>
-                    <span>{Number(result.score).toFixed(3)}</span>
-                    <code>{result.payload?.path}</code>
-                  </div>
-                ))}
-              </div>
-            </article>
-          ) : null}
+              <button
+                className="wide-button"
+                type="button"
+                disabled={busy === "process"}
+                onClick={processInbox}
+              >
+                {busy === "process" ? "Processing..." : "Process inbox"}
+              </button>
+              <p className="small-path">{health?.local.vaultRoot ?? ""}</p>
+            </section>
+          </aside>
         </section>
-      )}
+      ) : null}
 
-      <section className="library-shell">
+      {view === "ask" ? (
+        <>
+          <section className="ask-grid">
+            <form className="quick-panel ask-panel" onSubmit={ask}>
+              <div className="panel-title-row">
+                <h2>Ask</h2>
+                <span>{health?.local.chatModel ?? "local model"}</span>
+              </div>
+              <textarea
+                className="question-input"
+                value={question}
+                onChange={(event) => setQuestion(event.target.value)}
+                placeholder="Ask your notes..."
+              />
+              <button disabled={busy === "ask"} type="submit">
+                {busy === "ask" ? "Thinking..." : "Ask my notes"}
+              </button>
+            </form>
+
+            <form className="quick-panel ask-panel" onSubmit={search}>
+              <div className="panel-title-row">
+                <h2>Find</h2>
+                <span>{health?.local.embeddingModel ?? "embedding model"}</span>
+              </div>
+              <textarea
+                className="question-input"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Semantic search across saved chunks..."
+              />
+              <button disabled={busy === "search"} type="submit">
+                {busy === "search" ? "Searching..." : "Search notes"}
+              </button>
+            </form>
+          </section>
+
+          {(answer || searchResults.length > 0) && (
+            <section className="answer-grid">
+              {answer ? (
+                <article className="answer-card">
+                  <div className="panel-title-row">
+                    <p className="eyebrow">Answer</p>
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      disabled={busy === "file-answer"}
+                      onClick={fileAnswer}
+                    >
+                      {busy === "file-answer" ? "Filing..." : "File to wiki"}
+                    </button>
+                  </div>
+                  <p>{answer}</p>
+                </article>
+              ) : null}
+
+              {searchResults.length ? (
+                <article className="matches-card">
+                  <div className="panel-title-row">
+                    <p className="eyebrow">Matches</p>
+                    <button
+                      className="text-button"
+                      type="button"
+                      onClick={() => setSearchResults([])}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div className="match-list">
+                    {searchResults.slice(0, 6).map((result) => (
+                      <div className="match-row" key={result.id}>
+                        <strong>{result.payload?.title ?? "Untitled"}</strong>
+                        <span>{Number(result.score).toFixed(3)}</span>
+                        <code>{result.payload?.path}</code>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ) : null}
+            </section>
+          )}
+        </>
+      ) : null}
+
+      {view === "library" ? (
+        <section className="library-shell">
         <div className="library-toolbar">
           <div>
             <p className="eyebrow">Library</p>
@@ -592,16 +711,6 @@ export default function SecondBrainApp() {
         </div>
 
         <div className="library-search-row">
-          <form className="library-search" onSubmit={search}>
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Semantic search across saved chunks"
-            />
-            <button disabled={busy === "search"} type="submit">
-              Search
-            </button>
-          </form>
           <input
             value={libraryFilter}
             onChange={(event) => setLibraryFilter(event.target.value)}
@@ -737,9 +846,11 @@ export default function SecondBrainApp() {
             )}
           </section>
         </div>
-      </section>
+        </section>
+      ) : null}
 
-      <footer className="footer-grid">
+      {view !== "ask" ? (
+        <footer className="footer-grid">
         <section>
           <p className="eyebrow">Topics</p>
           <div className="chip-row">
@@ -768,7 +879,8 @@ export default function SecondBrainApp() {
             <p className="muted">No pending review items.</p>
           )}
         </section>
-      </footer>
+        </footer>
+      ) : null}
     </main>
   );
 }

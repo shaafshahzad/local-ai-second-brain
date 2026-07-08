@@ -1,6 +1,5 @@
 import SecondBrainApp from "@/components/SecondBrainApp";
 
 export default function Home() {
-  return <SecondBrainApp />;
+  return <SecondBrainApp view="dashboard" />;
 }
-
