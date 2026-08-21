@@ -64,6 +64,9 @@ bun run ollama:pull
 `bun run test:e2e` builds the production app and runs Chromium through the
 capture, library, and wiki CRUD workflows using an isolated test vault.
 
+GitHub Actions runs the same lint, typecheck, coverage, production build, and
+Chromium workflow for every pull request and every push to `main`.
+
 ## Vault Layout
 
 The app creates this local vault shape:
