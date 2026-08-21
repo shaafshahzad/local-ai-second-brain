@@ -1,5 +1,5 @@
 export function stripMarkdownFrontmatter(text: string) {
-  return text.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+  return text.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "").trim();
 }
 
 export function estimateTokens(text: string) {
@@ -7,6 +7,19 @@ export function estimateTokens(text: string) {
 }
 
 export function chunkText(text: string, maxWords = 220, overlapWords = 45) {
+  if (!Number.isInteger(maxWords) || maxWords <= 0) {
+    throw new RangeError("maxWords must be a positive integer");
+  }
+  if (
+    !Number.isInteger(overlapWords) ||
+    overlapWords < 0 ||
+    overlapWords >= maxWords
+  ) {
+    throw new RangeError(
+      "overlapWords must be a non-negative integer smaller than maxWords"
+    );
+  }
+
   const words = stripMarkdownFrontmatter(text).split(/\s+/).filter(Boolean);
   if (words.length === 0) return [];
 
@@ -22,4 +35,3 @@ export function chunkText(text: string, maxWords = 220, overlapWords = 45) {
 
   return chunks;
 }
-

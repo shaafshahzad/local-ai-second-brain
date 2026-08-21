@@ -50,10 +50,19 @@ By default, the app creates a `second-brain/` vault inside this project director
 ```bash
 bun run dev
 bun run lint
+bun run typecheck
+bun run test
+bun run test:coverage
+bun run test:e2e
+bun run verify
 bun run build
 bun run qdrant:up
 bun run ollama:pull
 ```
+
+`bun run test` runs unit, component, filesystem, SQLite, and route-handler tests.
+`bun run test:e2e` builds the production app and runs Chromium through the
+capture, library, and wiki CRUD workflows using an isolated test vault.
 
 ## Vault Layout
 
@@ -78,4 +87,3 @@ Raw captures stay as Markdown. SQLite and Qdrant are rebuildable indexes over th
 - URL capture uses a basic HTML-to-text stripper. A later phase should add a proper readability extractor.
 - Review queue persistence exists for low-confidence claims, but approve/reject/edit UI actions are not implemented yet.
 - PDF OCR, YouTube transcripts, browser extension capture, voice notes, and scheduled processing are intentionally deferred.
-

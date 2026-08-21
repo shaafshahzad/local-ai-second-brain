@@ -59,7 +59,7 @@ export function parseExtractionJson(raw: string): ExtractedKnowledge | null {
         ? parsed.claims
             .map((claim) => ({
               text: String(claim?.text ?? "").trim(),
-              confidence: Number(claim?.confidence ?? 0.5),
+              confidence: normalizeConfidence(claim?.confidence),
             }))
             .filter((claim) => claim.text)
         : [],
@@ -68,6 +68,12 @@ export function parseExtractionJson(raw: string): ExtractedKnowledge | null {
   } catch {
     return null;
   }
+}
+
+function normalizeConfidence(value: unknown) {
+  const confidence = Number(value ?? 0.5);
+  if (!Number.isFinite(confidence)) return 0.5;
+  return Math.min(1, Math.max(0, confidence));
 }
 
 function normalizeStringArray(value: unknown) {
@@ -110,4 +116,3 @@ const stopWords = new Set([
   "with",
   "would",
 ]);
-

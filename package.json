@@ -7,6 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:prepare": "node scripts/prepare-e2e.mjs",
+    "test:e2e:serve": "bun run test:e2e:prepare && bun run build && next start --hostname 127.0.0.1 --port 3100",
+    "verify": "bun run lint && bun run typecheck && bun run test:coverage && bun run build",
     "qdrant:up": "docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/.qdrant_storage:/qdrant/storage:z qdrant/qdrant",
     "ollama:pull": "ollama pull llama3.1 && ollama pull nomic-embed-text"
   },
@@ -22,12 +30,19 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.61.0",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.1.0",
+    "@vitest/coverage-v8": "4.1.6",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
-    "typescript": "^5"
+    "jsdom": "^30.0.1",
+    "typescript": "^5",
+    "vitest": "4.1.6"
   },
   "ignoreScripts": [
     "sharp",
