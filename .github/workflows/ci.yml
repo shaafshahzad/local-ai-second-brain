@@ -103,3 +103,57 @@ jobs:
             test-results/
           if-no-files-found: ignore
           retention-days: 14
+
+  container:
+    name: Container build and smoke test
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and load production image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: local-ai-second-brain:ci
+          cache-from: type=gha,scope=production-image
+          cache-to: type=gha,mode=max,scope=production-image
+
+      - name: Start production container with persistent storage
+        run: |
+          docker volume create second-brain-ci-data
+          docker run --detach \
+            --name second-brain-ci \
+            --publish 3101:3000 \
+            --env OLLAMA_HOST=http://127.0.0.1:9 \
+            --env QDRANT_URL=http://127.0.0.1:9 \
+            --mount type=volume,source=second-brain-ci-data,target=/data \
+            local-ai-second-brain:ci
+
+      - name: Wait for container health
+        run: |
+          for attempt in {1..30}; do
+            echo "Health check attempt ${attempt}/30"
+            if curl --fail --silent --show-error http://127.0.0.1:3101/api/health >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs second-brain-ci
+          exit 1
+
+      - name: Run deployment smoke test
+        run: node scripts/smoke-deployment.mjs http://127.0.0.1:3101
+
+      - name: Clean up container resources
+        if: ${{ always() }}
+        run: |
+          docker rm --force second-brain-ci 2>/dev/null || true
+          docker volume rm second-brain-ci-data 2>/dev/null || true
