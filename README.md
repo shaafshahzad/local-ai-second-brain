@@ -67,6 +67,35 @@ capture, library, and wiki CRUD workflows using an isolated test vault.
 GitHub Actions runs the same lint, typecheck, coverage, production build, and
 Chromium workflow for every pull request and every push to `main`.
 
+## Container Deployment
+
+The production image uses Next.js standalone output, runs as a non-root user,
+and stores all mutable Markdown and SQLite data under `/data/vault`.
+
+```bash
+docker build -t local-ai-second-brain .
+docker volume create local-ai-second-brain-data
+docker run --rm -p 3000:3000 \
+  -v local-ai-second-brain-data:/data \
+  -e OLLAMA_HOST=http://host.docker.internal:11434 \
+  -e QDRANT_URL=http://host.docker.internal:6333 \
+  local-ai-second-brain
+```
+
+After the container is reachable, verify its HTML, health endpoint, and full
+source/wiki Markdown + SQLite CRUD path with:
+
+```bash
+bun run test:smoke -- http://127.0.0.1:3000
+```
+
+`railway.json` configures the same image for Railway. Mount a persistent volume
+at `/data`; the image already points `SECOND_BRAIN_VAULT_DIR` and
+`SECOND_BRAIN_DB_PATH` at that volume. Set `OLLAMA_HOST` and `QDRANT_URL` to
+reachable services to enable semantic search and answers. Without them, capture,
+library, wiki maintenance, heuristic extraction, and durable storage still work,
+while `/api/health` reports the unavailable optional AI services explicitly.
+
 ## Vault Layout
 
 The app creates this local vault shape:

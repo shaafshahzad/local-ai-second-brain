@@ -1,0 +1,13 @@
+.git
+.github
+.next
+.qdrant_storage
+.test-data
+coverage
+node_modules
+playwright-report
+second-brain
+test-results
+.env*
+*.log
+*.tsbuildinfo
