@@ -6,7 +6,7 @@ test.describe.serial("Local AI Second Brain", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(
       "Your local knowledge base."
     );
-    await expect(page.getByText("Check local services")).toBeVisible();
+    await expect(page.getByText("Services offline")).toBeVisible();
 
     await page.getByRole("link", { name: "Capture", exact: true }).click();
     await expect(page).toHaveURL(/\/capture$/);

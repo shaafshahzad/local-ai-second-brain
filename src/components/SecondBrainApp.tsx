@@ -97,6 +97,17 @@ const pageTitles: Record<AppView, string> = {
   library: "Manage captures and wiki pages.",
 };
 
+const pageDescriptions: Record<AppView, string> = {
+  dashboard:
+    "A private workspace that turns scattered notes into searchable, source-grounded knowledge.",
+  capture:
+    "Drop in a thought, article, or Markdown file. Everything stays readable in your local vault.",
+  ask:
+    "Search semantically or ask a question. Answers are generated locally and linked back to their sources.",
+  library:
+    "Browse the files behind your knowledge graph, refine metadata, and edit the Markdown directly.",
+};
+
 export default function SecondBrainApp({ view = "dashboard" }: { view?: AppView }) {
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [health, setHealth] = useState<HealthData | null>(null);
@@ -424,32 +435,71 @@ export default function SecondBrainApp({ view = "dashboard" }: { view?: AppView 
   }
 
   return (
-    <main className="app-shell">
-      <header className="app-header">
-        <div>
-          <p className="eyebrow">Local AI Second Brain</p>
-          <h1>{pageTitles[view]}</h1>
-        </div>
-        <div className="header-actions">
-          <span className={localReady ? "service-pill ok" : "service-pill warn"}>
-            {localReady ? "Local AI ready" : "Check local services"}
+    <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        Skip to content
+      </a>
+      <header className="product-bar">
+        <Link className="brand" href="/" aria-label="Local AI Second Brain home">
+          <span className="brand-mark" aria-hidden="true">
+            <span />
+            <span />
+            <span />
           </span>
-          <button className="secondary-button" type="button" onClick={refresh}>
-            Refresh
+          <span className="brand-copy">
+            <strong>Second Brain</strong>
+            <small>local knowledge system</small>
+          </span>
+        </Link>
+
+        <nav className="app-nav" aria-label="Primary">
+          {navItems.map((item) => (
+            <Link
+              aria-current={view === item.view ? "page" : undefined}
+              className={view === item.view ? "active" : ""}
+              href={item.href}
+              key={item.href}
+            >
+              <NavIcon view={item.view} />
+              <span>{item.label}</span>
+            </Link>
+          ))}
+        </nav>
+
+        <div className="header-actions">
+          <span
+            className={localReady ? "service-pill ok" : "service-pill warn"}
+            role="status"
+          >
+            <span className="status-dot" aria-hidden="true" />
+            {localReady ? "Local AI ready" : "Services offline"}
+          </span>
+          <button
+            aria-label="Refresh local service status"
+            className="icon-button secondary-button"
+            type="button"
+            onClick={refresh}
+          >
+            <RefreshIcon />
           </button>
         </div>
       </header>
-      <nav className="app-nav" aria-label="Primary">
-        {navItems.map((item) => (
-          <Link
-            className={view === item.view ? "active" : ""}
-            href={item.href}
-            key={item.href}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+
+      <main id="main-content">
+        <header className="app-header">
+          <div>
+            <p className="eyebrow">{view === "dashboard" ? "Workspace overview" : view}</p>
+            <h1>{pageTitles[view]}</h1>
+            <p className="page-description">{pageDescriptions[view]}</p>
+          </div>
+          <div className="privacy-note">
+            <LockIcon />
+            <span>
+              <strong>Private by design</strong>
+              Your notes and models stay on this machine.
+            </span>
+          </div>
+        </header>
 
       {notice ? <p className="notice">{notice}</p> : null}
 
@@ -881,7 +931,40 @@ export default function SecondBrainApp({ view = "dashboard" }: { view?: AppView 
         </section>
         </footer>
       ) : null}
-    </main>
+      </main>
+    </div>
+  );
+}
+
+function NavIcon({ view }: { view: AppView }) {
+  const paths: Record<AppView, React.ReactNode> = {
+    dashboard: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />,
+    capture: <path d="M12 5v14M5 12h14" />,
+    ask: <path d="M5 5h14v11H9l-4 3V5Z" />,
+    library: <path d="M5 4h5v16H5zM10 4h5v16h-5zM16 5l3-1 2 15-3 1z" />,
+  };
+
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      {paths[view]}
+    </svg>
+  );
+}
+
+function RefreshIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <path d="M20 6v5h-5M4 18v-5h5M18.2 9A7 7 0 0 0 6.6 6.6L4 9m16 6-2.6 2.4A7 7 0 0 1 5.8 15" />
+    </svg>
+  );
+}
+
+function LockIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24">
+      <rect x="5" y="10" width="14" height="10" rx="2" />
+      <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </svg>
   );
 }
 

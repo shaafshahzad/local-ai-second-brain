@@ -13,8 +13,21 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Local AI Second Brain",
-  description: "A local-first Markdown, SQLite, Ollama, and Qdrant second brain.",
+  title: {
+    default: "Local AI Second Brain",
+    template: "%s · Local AI Second Brain",
+  },
+  description:
+    "A private knowledge workspace powered by local Ollama models, Markdown, SQLite, and Qdrant.",
+  applicationName: "Local AI Second Brain",
+  keywords: [
+    "local AI",
+    "second brain",
+    "RAG",
+    "Ollama",
+    "Qdrant",
+    "Markdown",
+  ],
 };
 
 export default function RootLayout({
