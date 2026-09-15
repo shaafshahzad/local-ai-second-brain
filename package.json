@@ -16,6 +16,9 @@
     "test:e2e:serve": "node scripts/serve-e2e.mjs",
     "test:smoke": "node scripts/smoke-deployment.mjs",
     "verify": "bun run lint && bun run typecheck && bun run test:coverage && bun run build",
+    "local:up": "docker compose -f compose.local.yml up --build -d",
+    "local:down": "docker compose -f compose.local.yml down",
+    "local:logs": "docker compose -f compose.local.yml logs -f app",
     "qdrant:up": "docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/.qdrant_storage:/qdrant/storage:z qdrant/qdrant",
     "ollama:pull": "ollama pull llama3.1 && ollama pull nomic-embed-text"
   },
