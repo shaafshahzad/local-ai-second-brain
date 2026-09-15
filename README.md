@@ -1,121 +1,139 @@
-# Local AI Second Brain
+<div align="center">
+  <h1>Local AI Second Brain</h1>
+  <p><strong>A private knowledge workspace that turns raw notes into searchable, source-grounded answers.</strong></p>
+  <p>
+    Markdown is the source of truth. Ollama runs the models. Qdrant handles semantic retrieval.<br />
+    Your notes stay on your machine.
+  </p>
+  <p>
+    <img alt="Next.js" src="https://img.shields.io/badge/Next.js_16-151714?style=flat-square&logo=nextdotjs&logoColor=white" />
+    <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-151714?style=flat-square&logo=typescript&logoColor=B9F34B" />
+    <img alt="Bun" src="https://img.shields.io/badge/Bun-151714?style=flat-square&logo=bun&logoColor=B9F34B" />
+    <img alt="Ollama" src="https://img.shields.io/badge/Ollama-151714?style=flat-square&logo=ollama&logoColor=B9F34B" />
+    <img alt="CI" src="https://img.shields.io/github/actions/workflow/status/shaafshahzad/local-ai-second-brain/ci.yml?branch=main&style=flat-square&label=CI" />
+  </p>
+</div>
 
-A local-first second brain MVP built with Next.js, Markdown files, SQLite, Ollama, and Qdrant.
+![Second Brain dashboard](docs/assets/dashboard.png)
 
-## What Works
+## What it does
 
-- Paste text, URLs, quick notes, or uploaded `.md` / `.txt` content into the inbox.
-- Save raw Markdown sources under a configurable local vault.
-- Track source metadata, chunks, entities, tags, claims, wiki pages, and review items in SQLite.
-- Process unprocessed sources into chunks.
-- Use Ollama for local summaries, entities, claims, tags, embeddings, and answers.
-- Use Qdrant for local semantic search over source chunks.
-- Auto-create Markdown wiki pages from extracted entities with source links.
-- Ask questions over retrieved local snippets with local-only LLM responses.
+Local AI Second Brain is an end-to-end retrieval-augmented generation app built around a durable local vault—not a chat wrapper. It captures unstructured material, extracts knowledge with local models, creates Markdown wiki pages, indexes source chunks for semantic retrieval, and answers questions with paths back to the original notes.
 
-## Local Setup
+- **Capture without friction:** paste a note or URL, or import `.md` and `.txt` files.
+- **Keep ownership:** raw captures and generated wiki pages remain ordinary Markdown files.
+- **Structure locally:** extract summaries, entities, tags, and claims through Ollama.
+- **Retrieve semantically:** embed and search source chunks through a local Qdrant collection.
+- **Answer with provenance:** ground generated answers in retrieved snippets and retain their source paths.
+- **Edit the substrate:** review captures, metadata, and generated wiki pages in the built-in Markdown library.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Notes, URLs, Markdown] --> B[Next.js capture API]
+    B --> C[(Local Markdown vault)]
+    B --> D[(SQLite metadata)]
+    C --> E[Chunk and extraction pipeline]
+    E --> F[Ollama<br/>chat + embeddings]
+    E --> G[(Qdrant vectors)]
+    F --> H[Wiki pages + claims]
+    G --> I[Semantic retrieval]
+    I --> J[Source-grounded answer]
+    H --> C
+```
+
+The vault is canonical. SQLite and Qdrant are rebuildable indexes, so the user's knowledge never depends on a proprietary database format.
+
+## Run it locally
+
+### One-command production stack
+
+Requirements: [Docker Desktop](https://www.docker.com/products/docker-desktop/), [Ollama](https://ollama.com/), and the two local models below.
+
+```bash
+ollama pull llama3.1
+ollama pull nomic-embed-text
+bun run local:up
+```
+
+Open [http://localhost:3000](http://localhost:3000). The Compose stack builds the production image, starts Qdrant, and stores both the Markdown/SQLite vault and vector index in named volumes. Ports bind to `127.0.0.1` only.
+
+```bash
+bun run local:logs   # follow application logs
+bun run local:down   # stop containers; keep data volumes
+```
+
+Use `SECOND_BRAIN_PORT` or `QDRANT_PORT` to override the default loopback ports. The app connects to Ollama on the host through `host.docker.internal`.
+
+### Development mode
 
 ```bash
 bun install
 docker compose up -d qdrant
-brew install ollama
 ollama serve
 ollama pull llama3.1
 ollama pull nomic-embed-text
 bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Copy `.env.example` to `.env.local` to override vault paths, model names, or service URLs.
 
-If Ollama is already installed, skip `brew install ollama`.
+## Product surfaces
 
-## Configuration
+| Surface | Purpose |
+| --- | --- |
+| Dashboard | Monitor the capture queue, vector chunks, recent sources, wiki pages, review items, and topic signals. |
+| Capture | Save plain text, URLs, Markdown, and text files with optional immediate processing. |
+| Ask | Run semantic search or generate a local, retrieved-context answer and file it back to the wiki. |
+| Library | Filter, inspect, edit, create, and delete the Markdown behind sources and wiki pages. |
 
-Copy `.env.example` to `.env.local` if you want to override defaults.
+![Second Brain library and Markdown editor](docs/assets/library.png)
+
+## Engineering quality
+
+The repository includes a layered verification suite rather than relying on manual demos:
+
+- Vitest coverage across chunking, extraction, vault operations, SQLite persistence, route handlers, and React workflows.
+- Playwright production-browser flows for navigation, source capture/edit/delete, and wiki create/edit/delete.
+- A deployment smoke test that exercises health, capture/read/update, wiki CRUD, and cleanup against a running container.
+- GitHub Actions jobs for lint, type checking, coverage, production build, Chromium E2E, and container build/smoke validation.
+- A multi-stage, non-root production image with persistent `/data/vault` storage.
 
 ```bash
-SECOND_BRAIN_VAULT_DIR=/absolute/path/to/second-brain
-SECOND_BRAIN_DB_PATH=/absolute/path/to/second-brain/second-brain.sqlite
-OLLAMA_HOST=http://127.0.0.1:11434
-OLLAMA_CHAT_MODEL=llama3.1
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
-QDRANT_URL=http://127.0.0.1:6333
-QDRANT_COLLECTION=second_brain_chunks
-```
-
-By default, the app creates a `second-brain/` vault inside this project directory.
-
-## Useful Commands
-
-```bash
-bun run dev
-bun run lint
-bun run typecheck
-bun run test
-bun run test:coverage
-bun run test:e2e
 bun run verify
-bun run build
-bun run qdrant:up
-bun run ollama:pull
-```
-
-`bun run test` runs unit, component, filesystem, SQLite, and route-handler tests.
-`bun run test:e2e` builds the production app and runs Chromium through the
-capture, library, and wiki CRUD workflows using an isolated test vault.
-
-GitHub Actions runs the same lint, typecheck, coverage, production build, and
-Chromium workflow for every pull request and every push to `main`.
-
-## Container Deployment
-
-The production image uses Next.js standalone output, runs as a non-root user,
-and stores all mutable Markdown and SQLite data under `/data/vault`.
-
-```bash
-docker build -t local-ai-second-brain .
-docker volume create local-ai-second-brain-data
-docker run --rm -p 3000:3000 \
-  -v local-ai-second-brain-data:/data \
-  -e OLLAMA_HOST=http://host.docker.internal:11434 \
-  -e QDRANT_URL=http://host.docker.internal:6333 \
-  local-ai-second-brain
-```
-
-After the container is reachable, verify its HTML, health endpoint, and full
-source/wiki Markdown + SQLite CRUD path with:
-
-```bash
+bun run test:e2e
 bun run test:smoke -- http://127.0.0.1:3000
 ```
 
-`railway.json` configures the same image for Railway. Mount a persistent volume
-at `/data`; the image already points `SECOND_BRAIN_VAULT_DIR` and
-`SECOND_BRAIN_DB_PATH` at that volume. Set `OLLAMA_HOST` and `QDRANT_URL` to
-reachable services to enable semantic search and answers. Without them, capture,
-library, wiki maintenance, heuristic extraction, and durable storage still work,
-while `/api/health` reports the unavailable optional AI services explicitly.
+## Configuration
 
-## Vault Layout
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SECOND_BRAIN_VAULT_DIR` | `./second-brain` | Markdown vault root. |
+| `SECOND_BRAIN_DB_PATH` | `<vault>/second-brain.sqlite` | Rebuildable metadata index. |
+| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Local Ollama server. |
+| `OLLAMA_CHAT_MODEL` | `llama3.1` | Extraction and answer model. |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model. |
+| `QDRANT_URL` | `http://127.0.0.1:6333` | Vector database endpoint. |
+| `QDRANT_COLLECTION` | `second_brain_chunks` | Vector collection name. |
 
-The app creates this local vault shape:
+The generated vault remains human-readable:
 
 ```text
 second-brain/
-  inbox/
-  sources/
-  wiki/
-  maps/
-  questions/
-  logs/
-  config/
-  second-brain.sqlite
+├── inbox/
+├── sources/
+├── wiki/
+├── maps/
+├── questions/
+├── logs/
+├── config/
+└── second-brain.sqlite
 ```
 
-Raw captures stay as Markdown. SQLite and Qdrant are rebuildable indexes over the vault.
+## Current scope
 
-## Current Limits
+This is a polished local-first MVP. URL capture currently uses a basic HTML-to-text extractor; PDF/OCR, YouTube transcripts, browser capture, voice notes, and scheduled processing are future work. Low-confidence review items are persisted and visible, while approve/reject/edit actions are not yet implemented.
 
-- URL capture uses a basic HTML-to-text stripper. A later phase should add a proper readability extractor.
-- Review queue persistence exists for low-confidence claims, but approve/reject/edit UI actions are not implemented yet.
-- PDF OCR, YouTube transcripts, browser extension capture, voice notes, and scheduled processing are intentionally deferred.
+The included Railway configuration is an infrastructure path, not a public demo: a hosted version would need persistent storage, reachable Ollama/Qdrant services, and an authentication layer before network exposure.
