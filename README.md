@@ -131,9 +131,3 @@ second-brain/
 ├── config/
 └── second-brain.sqlite
 ```
-
-## Current scope
-
-This is a polished local-first MVP. URL capture currently uses a basic HTML-to-text extractor; PDF/OCR, YouTube transcripts, browser capture, voice notes, and scheduled processing are future work. Low-confidence review items are persisted and visible, while approve/reject/edit actions are not yet implemented.
-
-The included Railway configuration is an infrastructure path, not a public demo: a hosted version would need persistent storage, reachable Ollama/Qdrant services, and an authentication layer before network exposure.
